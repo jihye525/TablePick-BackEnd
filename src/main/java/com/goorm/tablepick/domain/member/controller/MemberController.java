@@ -9,11 +9,16 @@ import com.goorm.tablepick.global.jwt.JwtProvider;
 import com.goorm.tablepick.global.jwt.JwtTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -62,5 +67,22 @@ public class MemberController {
         List<MyBoardListResponseDto> boardList = memberService.getMemberBoardList(userDetails.getUsername());
         return ResponseEntity.ok(boardList);
     }
-    
+
+    @GetMapping("/logout")
+    @Operation(summary = "사용자 로그아웃", description = "사용자 ID를 기준으로 로그아웃합니다. 쿠키에서 리프레쉬 토큰 삭제 필요합니다.")
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        Cookie refreshCookie = new Cookie("refresh_token", null);
+        refreshCookie.setMaxAge(0);
+        refreshCookie.setPath("/");
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(true);
+
+        response.addCookie(refreshCookie);
+
+        return ResponseEntity.ok("로그아웃 완료");
+    }
+
 }
